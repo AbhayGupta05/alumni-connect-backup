@@ -3,8 +3,13 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+<<<<<<< HEAD
   "engines": {
     "node": "18.x"
+=======
+    "engines": {
+    "node": "22.x"
+>>>>>>> f4f8801403b904c7b516d15bbc5c92edeab4b2c6
   },
   "scripts": {
     "dev": "vite",

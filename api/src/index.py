@@ -3,14 +3,11 @@ import sys
 # DON'T CHANGE THIS !!!
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from flask import Flask, send_from_directory
+from flask import Flask
 from flask_cors import CORS
 from src.models.user import db
 from src.models.alumni import Alumni
-from src.models.event import Event, EventRegistration
-from src.models.message import Message, ForumPost
-from src.models.job import Job, JobApplication
-from src.models.donation import Donation, DonationCampaign
+# Import your other models as needed...
 
 # Import all blueprints
 from src.routes.user import user_bp
@@ -21,11 +18,21 @@ from src.routes.messages import messages_bp
 from src.routes.jobs import jobs_bp
 from src.routes.donations import donations_bp
 
-app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
+app = Flask(__name__)
 app.config['SECRET_KEY'] = 'asdf#FGSgvasgf$5$WGT'
 
 # Enable CORS for all routes
 CORS(app, supports_credentials=True)
+
+# --- DATABASE CONFIGURATION (UPDATED FOR VERCEL POSTGRES) ---
+postgres_url = os.environ.get('POSTGRES_URL')
+# Vercel's URL starts with 'postgres://', but SQLAlchemy needs 'postgresql://'
+if postgres_url and postgres_url.startswith("postgres://"):
+    postgres_url = postgres_url.replace("postgres://", "postgresql://", 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = postgres_url
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db.init_app(app)
+# --- END OF DATABASE CONFIGURATION ---
 
 # Register all blueprints
 app.register_blueprint(user_bp, url_prefix='/api')
@@ -36,11 +43,7 @@ app.register_blueprint(messages_bp, url_prefix='/api')
 app.register_blueprint(jobs_bp, url_prefix='/api')
 app.register_blueprint(donations_bp, url_prefix='/api')
 
-# Database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(os.path.dirname(__file__), 'database', 'app.db')}"
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db.init_app(app)
-
+# Create database tables and sample data within app context
 with app.app_context():
     db.create_all()
     
@@ -49,22 +52,5 @@ with app.app_context():
         from src.utils.sample_data import create_sample_data
         create_sample_data()
 
-@app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
-def serve(path):
-    static_folder_path = app.static_folder
-    if static_folder_path is None:
-            return "Static folder not configured", 404
-
-    if path != "" and os.path.exists(os.path.join(static_folder_path, path)):
-        return send_from_directory(static_folder_path, path)
-    else:
-        index_path = os.path.join(static_folder_path, 'index.html')
-        if os.path.exists(index_path):
-            return send_from_directory(static_folder_path, 'index.html')
-        else:
-            return "index.html not found", 404
-
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+# NOTE: The static file serving route and the app.run() block have been removed
+# as they are handled by Vercel's configuration.

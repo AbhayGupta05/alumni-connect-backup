@@ -70,7 +70,7 @@ const LoginPage = ({ onLogin }) => {
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="alumni" className="flex items-center gap-2">
                   <User className="h-4 w-4" />
-                  Alumni
+                  Alumni/Student
                 </TabsTrigger>
                 <TabsTrigger value="admin" className="flex items-center gap-2">
                   <Shield className="h-4 w-4" />

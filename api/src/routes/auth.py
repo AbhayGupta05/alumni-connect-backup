@@ -5,6 +5,16 @@ from src.models.alumni import Alumni
 
 auth_bp = Blueprint('auth', __name__)
 
+
+def _generate_unique_username(base_username: str) -> str:
+    """Generate a unique username by appending a numeric suffix if needed."""
+    candidate = base_username
+    suffix = 1
+    while User.query.filter_by(username=candidate).first() is not None:
+        candidate = f"{base_username}{suffix}"
+        suffix += 1
+    return candidate
+
 @auth_bp.route('/login', methods=['POST'])
 def login():
     data = request.json
@@ -27,8 +37,9 @@ def login():
             # Check if user exists, if not create demo user
             user = User.query.filter_by(email=email).first()
             if not user:
-                # Create demo user
-                username = email.split('@')[0]
+                # Create demo user (ensure username is unique)
+                base_username = email.split('@')[0]
+                username = _generate_unique_username(base_username)
                 user = User(username=username, email=email)
                 db.session.add(user)
                 db.session.commit()

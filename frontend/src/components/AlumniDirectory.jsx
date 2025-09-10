@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -24,11 +24,16 @@ import {
   Download,
   UserPlus,
   Heart,
-  Share2
+  Share2,
+  Loader2
 } from 'lucide-react'
+import apiClient from '../utils/api'
 import { sampleAlumni } from '../data/sampleData'
 
 const AlumniDirectory = () => {
+  const [alumni, setAlumni] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedDepartment, setSelectedDepartment] = useState('all')
   const [selectedYear, setSelectedYear] = useState('all')
@@ -37,26 +42,73 @@ const AlumniDirectory = () => {
   const [favorites, setFavorites] = useState(new Set())
   const [connections, setConnections] = useState(new Set())
 
-  // Get unique values for filters
-  const departments = [...new Set(sampleAlumni.map(alumni => alumni.department))]
-  const years = [...new Set(sampleAlumni.map(alumni => alumni.graduationYear))].sort((a, b) => b - a)
-  const locations = [...new Set(sampleAlumni.map(alumni => alumni.location.split(',')[1]?.trim() || alumni.location))]
+  // Fetch alumni data from API
+  useEffect(() => {
+    const fetchAlumni = async () => {
+      try {
+        setLoading(true)
+        const response = await apiClient.getAlumni()
+        if (response.success) {
+          setAlumni(response.alumni || [])
+        } else {
+          setError('Failed to load alumni data')
+          // Fallback to sample data
+          setAlumni(sampleAlumni.map(a => ({
+            ...a,
+            full_name: a.name,
+            current_position: a.currentPosition,
+            current_company: a.company
+          })))
+        }
+      } catch (error) {
+        console.error('Error fetching alumni:', error)
+        setError('Failed to connect to server')
+        // Fallback to sample data
+        setAlumni(sampleAlumni.map(a => ({
+          ...a,
+          full_name: a.name,
+          current_position: a.currentPosition,
+          current_company: a.company
+        })))
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchAlumni()
+  }, [])
+
+  // Get unique values for filters from actual data
+  const departments = [...new Set(alumni.map(alumni => alumni.department))].filter(Boolean)
+  const years = [...new Set(alumni.map(alumni => alumni.graduation_year))].sort((a, b) => b - a).filter(Boolean)
+  const locations = [...new Set(alumni.map(alumni => {
+    if (alumni.location) {
+      return alumni.location.split(',')[1]?.trim() || alumni.location
+    }
+    return null
+  }))].filter(Boolean)
 
   // Filter alumni based on search and filters
   const filteredAlumni = useMemo(() => {
-    return sampleAlumni.filter(alumni => {
-      const matchesSearch = alumni.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           alumni.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           alumni.currentPosition.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           alumni.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()))
+    return alumni.filter(alumniItem => {
+      const name = alumniItem.full_name || alumniItem.name || `${alumniItem.first_name || ''} ${alumniItem.last_name || ''}`.trim()
+      const company = alumniItem.current_company || alumniItem.company || ''
+      const position = alumniItem.current_position || alumniItem.currentPosition || ''
+      const skills = alumniItem.skills ? (Array.isArray(alumniItem.skills) ? alumniItem.skills : JSON.parse(alumniItem.skills || '[]')) : []
+      
+      const matchesSearch = searchTerm === '' ||
+                           name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           position.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()))
 
-      const matchesDepartment = selectedDepartment === 'all' || alumni.department === selectedDepartment
-      const matchesYear = selectedYear === 'all' || alumni.graduationYear.toString() === selectedYear
-      const matchesLocation = selectedLocation === 'all' || alumni.location.includes(selectedLocation)
+      const matchesDepartment = selectedDepartment === 'all' || alumniItem.department === selectedDepartment
+      const matchesYear = selectedYear === 'all' || alumniItem.graduation_year?.toString() === selectedYear || alumniItem.graduationYear?.toString() === selectedYear
+      const matchesLocation = selectedLocation === 'all' || (alumniItem.location && alumniItem.location.includes(selectedLocation))
 
       return matchesSearch && matchesDepartment && matchesYear && matchesLocation
     })
-  }, [searchTerm, selectedDepartment, selectedYear, selectedLocation])
+  }, [alumni, searchTerm, selectedDepartment, selectedYear, selectedLocation])
 
   const clearFilters = () => {
     setSearchTerm('')
@@ -101,7 +153,7 @@ const AlumniDirectory = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Alumni Directory</h1>
           <p className="text-gray-600">
-            Connect with {filteredAlumni.length} alumni from your network
+            {loading ? 'Loading alumni...' : `Connect with ${filteredAlumni.length} alumni from your network`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -197,7 +249,7 @@ const AlumniDirectory = () => {
           {/* Clear Filters */}
           <div className="flex justify-between items-center">
             <p className="text-sm text-gray-600">
-              Showing {filteredAlumni.length} of {sampleAlumni.length} alumni
+              Showing {filteredAlumni.length} of {alumni.length} alumni
             </p>
             <Button variant="outline" size="sm" onClick={clearFilters}>
               Clear Filters
@@ -206,49 +258,79 @@ const AlumniDirectory = () => {
         </CardContent>
       </Card>
 
+      {/* Loading State */}
+      {loading && (
+        <Card>
+          <CardContent className="text-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-gray-600">Loading alumni directory...</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <Card className="border-red-200">
+          <CardContent className="text-center py-6">
+            <div className="text-red-600 mb-2">{error}</div>
+            <p className="text-sm text-gray-600">Using sample data for demonstration</p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Alumni Grid/List */}
-      {viewMode === 'grid' ? (
+      {!loading && (viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredAlumni.map((alumni) => (
-            <Card key={alumni.id} className="hover:shadow-lg transition-shadow">
+          {filteredAlumni.map((alumniItem) => {
+            const name = alumniItem.full_name || alumniItem.name || `${alumniItem.first_name || ''} ${alumniItem.last_name || ''}`.trim()
+            const company = alumniItem.current_company || alumniItem.company || ''
+            const position = alumniItem.current_position || alumniItem.currentPosition || ''
+            const skills = alumniItem.skills ? (Array.isArray(alumniItem.skills) ? alumniItem.skills : JSON.parse(alumniItem.skills || '[]')) : []
+            const year = alumniItem.graduation_year || alumniItem.graduationYear
+            const isMentor = alumniItem.is_mentor || alumniItem.isAvailableForMentoring
+            
+            return (
+            <Card key={alumniItem.id} className="hover:shadow-lg transition-shadow">
               <CardHeader className="text-center">
                 <Avatar className="h-20 w-20 mx-auto mb-4">
-                  <AvatarImage src={alumni.profileImage} />
+                  <AvatarImage src={alumniItem.profile_image || alumniItem.profileImage} />
                   <AvatarFallback className="text-lg">
-                    {alumni.name.split(' ').map(n => n[0]).join('')}
+                    {name.split(' ').map(n => n[0]).join('').slice(0, 2) || 'AL'}
                   </AvatarFallback>
                 </Avatar>
-                <CardTitle className="text-lg">{alumni.name}</CardTitle>
+                <CardTitle className="text-lg">{name}</CardTitle>
                 <CardDescription>
-                  {alumni.currentPosition} at {alumni.company}
+                  {position} {company && `at ${company}`}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <GraduationCap className="h-4 w-4" />
-                  {alumni.degree} • Class of {alumni.graduationYear}
+                  {alumniItem.department} • Class of {year}
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <MapPin className="h-4 w-4" />
-                  {alumni.location}
-                </div>
+                {alumniItem.location && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <MapPin className="h-4 w-4" />
+                    {alumniItem.location}
+                  </div>
+                )}
                 
                 {/* Skills */}
                 <div className="flex flex-wrap gap-1">
-                  {alumni.skills.slice(0, 3).map((skill, index) => (
+                  {skills.slice(0, 3).map((skill, index) => (
                     <Badge key={index} variant="secondary" className="text-xs">
                       {skill}
                     </Badge>
                   ))}
-                  {alumni.skills.length > 3 && (
+                  {skills.length > 3 && (
                     <Badge variant="outline" className="text-xs">
-                      +{alumni.skills.length - 3}
+                      +{skills.length - 3}
                     </Badge>
                   )}
                 </div>
 
                 {/* Mentoring Badge */}
-                {alumni.isAvailableForMentoring && (
+                {isMentor && (
                   <Badge className="bg-green-100 text-green-800">
                     <Star className="h-3 w-3 mr-1" />
                     Available for Mentoring
@@ -257,7 +339,7 @@ const AlumniDirectory = () => {
 
                 {/* Actions */}
                 <div className="flex gap-2 pt-2">
-                  <Link to={`/profile/${alumni.id}`} className="flex-1">
+                  <Link to={`/profile/${alumniItem.id}`} className="flex-1">
                     <Button variant="outline" size="sm" className="w-full">
                       View Profile
                     </Button>
@@ -269,27 +351,36 @@ const AlumniDirectory = () => {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            )
+          })}
         </div>
       ) : (
         <div className="space-y-4">
-          {filteredAlumni.map((alumni) => (
-            <Card key={alumni.id} className="hover:shadow-md transition-shadow">
+          {filteredAlumni.map((alumniItem) => {
+            const name = alumniItem.full_name || alumniItem.name || `${alumniItem.first_name || ''} ${alumniItem.last_name || ''}`.trim()
+            const company = alumniItem.current_company || alumniItem.company || ''
+            const position = alumniItem.current_position || alumniItem.currentPosition || ''
+            const skills = alumniItem.skills ? (Array.isArray(alumniItem.skills) ? alumniItem.skills : JSON.parse(alumniItem.skills || '[]')) : []
+            const year = alumniItem.graduation_year || alumniItem.graduationYear
+            const isMentor = alumniItem.is_mentor || alumniItem.isAvailableForMentoring
+
+            return (
+            <Card key={alumniItem.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-center space-x-4">
                   <Avatar className="h-16 w-16">
-                    <AvatarImage src={alumni.profileImage} />
+                    <AvatarImage src={alumniItem.profile_image || alumniItem.profileImage} />
                     <AvatarFallback className="text-lg">
-                      {alumni.name.split(' ').map(n => n[0]).join('')}
+                      {name.split(' ').map(n => n[0]).join('').slice(0, 2) || 'AL'}
                     </AvatarFallback>
                   </Avatar>
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-lg font-semibold text-gray-900">
-                        {alumni.name}
+                        {name}
                       </h3>
-                      {alumni.isAvailableForMentoring && (
+                      {isMentor && (
                         <Badge className="bg-green-100 text-green-800">
                           <Star className="h-3 w-3 mr-1" />
                           Mentoring
@@ -300,38 +391,40 @@ const AlumniDirectory = () => {
                     <div className="grid md:grid-cols-2 gap-2 text-sm text-gray-600 mb-3">
                       <div className="flex items-center gap-1">
                         <Briefcase className="h-4 w-4" />
-                        {alumni.currentPosition} at {alumni.company}
+                        {position} {company && `at ${company}`}
                       </div>
                       <div className="flex items-center gap-1">
                         <GraduationCap className="h-4 w-4" />
-                        {alumni.degree} • Class of {alumni.graduationYear}
+                        {alumniItem.department} • Class of {year}
                       </div>
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-4 w-4" />
-                        {alumni.location}
-                      </div>
+                      {alumniItem.location && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="h-4 w-4" />
+                          {alumniItem.location}
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex flex-wrap gap-1 mb-3">
-                      {alumni.skills.slice(0, 5).map((skill, index) => (
+                      {skills.slice(0, 5).map((skill, index) => (
                         <Badge key={index} variant="secondary" className="text-xs">
                           {skill}
                         </Badge>
                       ))}
-                      {alumni.skills.length > 5 && (
+                      {skills.length > 5 && (
                         <Badge variant="outline" className="text-xs">
-                          +{alumni.skills.length - 5} more
+                          +{skills.length - 5} more
                         </Badge>
                       )}
                     </div>
 
                     <p className="text-sm text-gray-600 line-clamp-2">
-                      {alumni.bio}
+                      {alumniItem.bio}
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <Link to={`/profile/${alumni.id}`}>
+                    <Link to={`/profile/${alumniItem.id}`}>
                       <Button variant="outline" size="sm">
                         View Profile
                       </Button>
@@ -344,12 +437,13 @@ const AlumniDirectory = () => {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            )
+          })}
         </div>
-      )}
+      ))}
 
       {/* No Results */}
-      {filteredAlumni.length === 0 && (
+      {!loading && filteredAlumni.length === 0 && (
         <Card>
           <CardContent className="text-center py-12">
             <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />

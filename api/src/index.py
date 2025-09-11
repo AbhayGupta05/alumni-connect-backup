@@ -39,17 +39,30 @@ app.config['ENV'] = os.environ.get('FLASK_ENV', 'production')
 
 # CORS configuration
 allowed_origins = os.environ.get('CORS_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',')
+# Clean up origins (remove empty strings)
+allowed_origins = [origin.strip() for origin in allowed_origins if origin.strip()]
+
 CORS(
     app,
     supports_credentials=True,
-    resources={r"/*": {"origins": allowed_origins}}
+    resources={
+        r"/*": {
+            "origins": allowed_origins,
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"]
+        }
+    }
 )
 
-# Initialize SocketIO with authentication
+# Initialize SocketIO with authentication (optimized for serverless)
 socketio = SocketIO(
     app,
     cors_allowed_origins=allowed_origins,
-    async_mode='threading'
+    async_mode='threading',
+    logger=False,  # Disable logging for production
+    engineio_logger=False,
+    ping_timeout=20,
+    ping_interval=10
 )
 
 # --- DATABASE CONFIGURATION ---
@@ -68,14 +81,14 @@ if postgres_url:
     postgres_url += 'sslmode=require&pool_size=20&max_overflow=0&pool_pre_ping=true&pool_recycle=3600'
     app.config['SQLALCHEMY_DATABASE_URI'] = postgres_url
     
-    # PostgreSQL optimizations
+    # PostgreSQL optimizations for serverless (Vercel)
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-        'pool_size': 20,
-        'pool_recycle': 3600,
+        'pool_size': 5,  # Reduced for serverless
+        'pool_recycle': 1800,  # Reduced to 30 minutes
         'pool_pre_ping': True,
         'max_overflow': 0,
-        'pool_timeout': 30,
-        'echo': False  # Set to True for debugging
+        'pool_timeout': 20,  # Reduced timeout
+        'echo': os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
     }
 else:
     # Use SQLite for local development with optimizations

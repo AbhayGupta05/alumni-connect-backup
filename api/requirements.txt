@@ -1,28 +1,32 @@
-blinker==1.9.0
-click==8.2.1
+# Core Flask dependencies
 Flask==3.1.1
 flask-cors==6.0.0
 Flask-SQLAlchemy==3.1.1
+Werkzeug==3.1.3
+
+# Database
+psycopg2-binary
+SQLAlchemy==2.0.41
+
+# Authentication & Security
+Flask-JWT-Extended==4.5.3
+Python-dotenv==1.0.0
+
+# WebSocket support (simplified for serverless)
+Flask-SocketIO==5.3.6
+python-socketio==5.11.0
+
+# Image processing
+Pillow>=10.1.0
+
+# Validation
+email-validator>=2.0.0
+
+# Core dependencies
+blinker==1.9.0
+click==8.2.1
 greenlet==3.2.4
 itsdangerous==2.2.0
 Jinja2==3.1.6
 MarkupSafe==3.0.2
-SQLAlchemy==2.0.41
 typing_extensions==4.14.0
-Werkzeug==3.1.3
-psycopg2-binary
-Python-dotenv==1.0.0
-Flask-JWT-Extended==4.5.3
-Flask-Migrate==4.0.5
-Flask-SocketIO==5.3.6
-python-socketio==5.11.0
-# Additional packages for production (Python 3.13 compatible)
-pandas>=2.1.0
-openpyxl>=3.1.0
-xlrd>=2.0.0
-email-validator>=2.0.0
-gunicorn>=21.0.0
-redis>=4.5.0
-celery>=5.3.0
-# Image processing (simplified)
-Pillow>=10.1.0

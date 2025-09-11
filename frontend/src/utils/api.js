@@ -1,7 +1,8 @@
 // API utility for communicating with the Flask backend
-const API_BASE_URL = import.meta.env.MODE === 'development' 
-  ? 'http://localhost:5000/api' 
-  : '/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
+  (import.meta.env.MODE === 'development' 
+    ? 'http://localhost:5000' 
+    : '');
 
 class ApiClient {
   constructor() {
@@ -9,7 +10,12 @@ class ApiClient {
   }
 
   async request(endpoint, options = {}) {
-    const url = `${this.baseURL}${endpoint}`;
+    // Handle different route prefixes
+    let fullEndpoint = endpoint;
+    if (!endpoint.startsWith('/auth') && !endpoint.startsWith('/alumni-claim')) {
+      fullEndpoint = `/api${endpoint}`;
+    }
+    const url = `${this.baseURL}${fullEndpoint}`;
     const config = {
       headers: {
         'Content-Type': 'application/json',
@@ -19,7 +25,11 @@ class ApiClient {
       ...options,
     };
 
-    if (config.body && typeof config.body === 'object') {
+    // Handle FormData (for file uploads) vs regular JSON
+    if (config.body instanceof FormData) {
+      // For FormData, don't set Content-Type (browser will set it with boundary)
+      delete config.headers['Content-Type'];
+    } else if (config.body && typeof config.body === 'object') {
       config.body = JSON.stringify(config.body);
     }
 
@@ -219,6 +229,23 @@ class ApiClient {
 
   async getDonationStats() {
     return this.request('/stats');
+  }
+
+  // Alumni claim endpoints
+  async getColleges() {
+    return this.request('/alumni-claim/colleges');
+  }
+
+  async submitAlumniClaim(formData) {
+    return this.request('/alumni-claim/submit-claim', {
+      method: 'POST',
+      body: formData, // FormData object for file uploads
+      headers: {} // Don't set Content-Type for FormData
+    });
+  }
+
+  async getClaimStatus(claimId) {
+    return this.request(`/alumni-claim/claim-status/${claimId}`);
   }
 }
 

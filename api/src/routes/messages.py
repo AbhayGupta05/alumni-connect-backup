@@ -103,6 +103,39 @@ def send_message():
     db.session.add(message)
     db.session.commit()
     
+    # Emit the message to WebSocket clients via global socketio
+    try:
+        # Import here to avoid circular import
+        import importlib
+        index_module = importlib.import_module('src.index')
+        socketio = getattr(index_module, 'socketio', None)
+        
+        if socketio:
+            message_data = message.to_dict()
+            
+            # Add sender info for display
+            sender = User.query.get(user_id)
+            sender_alumni = Alumni.query.filter_by(user_id=user_id).first()
+            
+            message_data['sender'] = sender.to_dict() if sender else None
+            message_data['sender_alumni'] = sender_alumni.to_dict() if sender_alumni else None
+            
+            # Create room name for conversation (sorted IDs for consistency)
+            room = f"conversation_{min(user_id, data['recipient_id'])}_{max(user_id, data['recipient_id'])}"
+            
+            # Emit to the conversation room
+            socketio.emit('new_message', message_data, room=room)
+            
+            # Also emit to individual user rooms for notifications
+            socketio.emit('message_notification', {
+                'message_id': message.id,
+                'sender_id': user_id,
+                'content': data['content'][:100] + '...' if len(data['content']) > 100 else data['content']
+            }, room=f"user_{data['recipient_id']}")
+        
+    except Exception as e:
+        print(f"WebSocket emission failed: {e}")
+    
     return jsonify({
         'success': True,
         'message': message.to_dict()

@@ -14,3 +14,15 @@ psycopg2-binary
 Python-dotenv==1.0.0
 Flask-JWT-Extended==4.5.3
 Flask-Migrate==4.0.5
+Flask-SocketIO==5.3.6
+python-socketio==5.11.0
+# Additional packages for production (Python 3.13 compatible)
+pandas>=2.1.0
+openpyxl>=3.1.0
+xlrd>=2.0.0
+email-validator>=2.0.0
+gunicorn>=21.0.0
+redis>=4.5.0
+celery>=5.3.0
+# Image processing (simplified)
+Pillow>=10.1.0

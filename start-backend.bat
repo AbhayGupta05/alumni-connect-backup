@@ -1,5 +1,8 @@
 @echo off
-echo Starting Alumni Management Backend...
+echo Starting Alumni Management Backend with WebSocket support...
 cd api
-python -m flask --app src.index run --debug --host=0.0.0.0 --port=5000
+echo Installing dependencies if needed...
+pip install -r requirements.txt
+echo.
+python run_socketio_server.py
 pause

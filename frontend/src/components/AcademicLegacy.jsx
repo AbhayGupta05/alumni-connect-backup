@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,16 +27,67 @@ import {
   ExternalLink,
   Building,
   MapPin,
-  Clock
+  Clock,
+  Globe,
+  University,
+  Crown,
+  UserCheck,
+  Download,
+  Edit,
+  Trash2,
+  Shield,
+  Sparkles
 } from 'lucide-react'
 
-const AcademicLegacy = () => {
+const ModernAcademicLegacy = ({ currentUser = { id: 1, role: 'alumni', institution: 'University of Technology' } }) => {
   const [donationAmount, setDonationAmount] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
+  const [activeScope, setActiveScope] = useState('institution')
+
+  // Role-based permissions
+  const permissions = useMemo(() => {
+    switch (currentUser?.role) {
+      case 'student':
+        return {
+          canDonate: false,
+          canVolunteer: true,
+          canCreateCampaigns: false,
+          canEditCampaigns: false,
+          canDeleteCampaigns: false,
+          canExport: false,
+          canAccessGlobalData: false,
+          scopeAccess: 'institution-only'
+        }
+      case 'alumni':
+        return {
+          canDonate: true,
+          canVolunteer: true,
+          canCreateCampaigns: false,
+          canEditCampaigns: false,
+          canDeleteCampaigns: false,
+          canExport: false,
+          canAccessGlobalData: true,
+          scopeAccess: 'institution-and-global'
+        }
+      case 'admin':
+        return {
+          canDonate: true,
+          canVolunteer: true,
+          canCreateCampaigns: true,
+          canEditCampaigns: true,
+          canDeleteCampaigns: true,
+          canExport: true,
+          canAccessGlobalData: true,
+          scopeAccess: 'all'
+        }
+      default:
+        return {}
+    }
+  }, [currentUser?.role])
 
   // Sample giving opportunities
-  const givingOpportunities = [
+  const allGivingOpportunities = [
     {
       id: 1,
       title: "Student Scholarship Fund",
@@ -47,7 +98,9 @@ const AcademicLegacy = () => {
       category: "scholarships",
       urgency: "high",
       image: "/api/placeholder/300/200",
-      impact: "Supports 15 students annually"
+      impact: "Supports 15 students annually",
+      institution: 'University of Technology',
+      is_global: false
     },
     {
       id: 2,
@@ -59,10 +112,26 @@ const AcademicLegacy = () => {
       category: "facilities",
       urgency: "medium",
       image: "/api/placeholder/300/200",
-      impact: "Benefits 500+ engineering students"
+      impact: "Benefits 500+ engineering students",
+      institution: 'University of Technology',
+      is_global: false
     },
     {
       id: 3,
+      title: "Global Alumni Emergency Fund",
+      description: "Support alumni communities worldwide during crisis situations",
+      goal: 500000,
+      raised: 320000,
+      donors: 456,
+      category: "emergency",
+      urgency: "high",
+      image: "/api/placeholder/300/200",
+      impact: "Assists 200+ alumni globally",
+      institution: 'Global Alumni Network',
+      is_global: true
+    },
+    {
+      id: 4,
       title: "Alumni Mentorship Program",
       description: "Fund the expansion of our mentorship program to reach more students",
       goal: 50000,
@@ -71,12 +140,14 @@ const AcademicLegacy = () => {
       category: "programs",
       urgency: "low",
       image: "/api/placeholder/300/200",
-      impact: "Connects 100+ student-mentor pairs"
+      impact: "Connects 100+ student-mentor pairs",
+      institution: 'University of Technology',
+      is_global: false
     }
   ]
 
   // Sample volunteer opportunities
-  const volunteerOpportunities = [
+  const allVolunteerOpportunities = [
     {
       id: 1,
       title: "Guest Lecturer Program",
@@ -85,32 +156,50 @@ const AcademicLegacy = () => {
       skills: ["Industry Experience", "Public Speaking"],
       department: "All Departments",
       volunteers: 45,
-      type: "ongoing"
+      type: "ongoing",
+      institution: 'University of Technology',
+      is_global: false
     },
     {
       id: 2,
+      title: "Global Alumni Webinar Series",
+      description: "Conduct virtual sessions for alumni worldwide on industry trends",
+      timeCommitment: "2 hours per quarter",
+      skills: ["Expertise", "Online Presentation"],
+      department: "Global Programs",
+      volunteers: 123,
+      type: "online",
+      institution: 'Global Alumni Network',
+      is_global: true
+    },
+    {
+      id: 3,
       title: "Career Fair Participation",
       description: "Represent your company and help students explore career opportunities",
       timeCommitment: "1 day per year",
       skills: ["Recruiting", "Career Guidance"],
       department: "Career Services",
       volunteers: 78,
-      type: "event"
+      type: "event",
+      institution: 'University of Technology',
+      is_global: false
     },
     {
-      id: 3,
+      id: 4,
       title: "Student Project Mentoring",
       description: "Guide senior students through their capstone projects",
       timeCommitment: "3-5 hours per month",
       skills: ["Technical Expertise", "Project Management"],
       department: "Engineering",
       volunteers: 32,
-      type: "ongoing"
+      type: "ongoing",
+      institution: 'University of Technology',
+      is_global: false
     }
   ]
 
   // Sample university news and updates
-  const universityNews = [
+  const allUniversityNews = [
     {
       id: 1,
       title: "University Ranks #15 in National Engineering Programs",
@@ -118,25 +207,42 @@ const AcademicLegacy = () => {
       date: "2024-01-15",
       category: "achievement",
       image: "/api/placeholder/400/200",
-      readTime: "3 min read"
+      readTime: "3 min read",
+      institution: 'University of Technology',
+      is_global: false
     },
     {
       id: 2,
+      title: "Global Alumni Network Reaches 1 Million Members",
+      summary: "The worldwide alumni community celebrates this milestone with virtual events across continents",
+      date: "2024-01-14",
+      category: "milestone",
+      image: "/api/placeholder/400/200",
+      readTime: "4 min read",
+      institution: 'Global Alumni Network',
+      is_global: true
+    },
+    {
+      id: 3,
       title: "New Research Center for Sustainable Technology Opens",
       summary: "State-of-the-art facility will focus on renewable energy and environmental solutions",
       date: "2024-01-12",
       category: "facilities",
       image: "/api/placeholder/400/200",
-      readTime: "5 min read"
+      readTime: "5 min read",
+      institution: 'University of Technology',
+      is_global: false
     },
     {
-      id: 3,
+      id: 4,
       title: "Alumni Startup Acquired for $50M",
       summary: "Tech company founded by Class of 2018 graduates acquired by major corporation",
       date: "2024-01-10",
       category: "alumni-success",
       image: "/api/placeholder/400/200",
-      readTime: "4 min read"
+      readTime: "4 min read",
+      institution: 'University of Technology',
+      is_global: false
     }
   ]
 
@@ -162,6 +268,22 @@ const AcademicLegacy = () => {
     ]
   }
 
+  // Scope filtering
+  const filterByScope = (items) => {
+    if (currentUser?.role === 'student') {
+      return items.filter(item => !item.is_global && item.institution === currentUser?.institution)
+    }
+    if (activeScope === 'global') {
+      return items.filter(item => item.is_global === true)
+    }
+    return items.filter(item => item.institution === currentUser?.institution || !item.is_global)
+  }
+
+  // Derived, filtered datasets
+  const givingOpportunities = useMemo(() => filterByScope(allGivingOpportunities), [activeScope, currentUser])
+  const volunteerOpportunities = useMemo(() => filterByScope(allVolunteerOpportunities), [activeScope, currentUser])
+  const universityNews = useMemo(() => filterByScope(allUniversityNews), [activeScope, currentUser])
+
   const filteredOpportunities = givingOpportunities.filter(opportunity => {
     const matchesSearch = opportunity.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          opportunity.description.toLowerCase().includes(searchTerm.toLowerCase())
@@ -185,257 +307,362 @@ const AcademicLegacy = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Academic Legacy</h1>
-          <p className="text-gray-600">
-            Support your alma mater and help shape the future of education
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Share2 className="h-4 w-4 mr-1" />
-            Share Impact
-          </Button>
-          <Button size="sm">
-            <Gift className="h-4 w-4 mr-1" />
-            Make a Gift
-          </Button>
-        </div>
-      </div>
-
-      {/* Academic Legacy Tabs */}
-      <Tabs defaultValue="giving" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="giving" className="flex items-center gap-2">
-            <Gift className="h-4 w-4" />
-            Giving
-          </TabsTrigger>
-          <TabsTrigger value="volunteer" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Volunteer
-          </TabsTrigger>
-          <TabsTrigger value="impact" className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
-            Impact
-          </TabsTrigger>
-          <TabsTrigger value="news" className="flex items-center gap-2">
-            <BookOpen className="h-4 w-4" />
-            University News
-          </TabsTrigger>
-          <TabsTrigger value="recognition" className="flex items-center gap-2">
-            <Award className="h-4 w-4" />
-            Recognition
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Giving Opportunities */}
-        <TabsContent value="giving" className="space-y-6">
-          {/* Quick Donation */}
-          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-            <CardHeader>
-              <CardTitle className="text-blue-900">Make a Quick Gift</CardTitle>
-              <CardDescription className="text-blue-700">
-                Every contribution makes a difference in a student's life
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col md:flex-row gap-4 items-end">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium mb-2 text-blue-900">
-                    Donation Amount
-                  </label>
-                  <Input
-                    type="number"
-                    placeholder="Enter amount"
-                    value={donationAmount}
-                    onChange={(e) => setDonationAmount(e.target.value)}
-                    className="bg-white"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  {[25, 50, 100, 250].map(amount => (
-                    <Button
-                      key={amount}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setDonationAmount(amount.toString())}
-                      className="bg-white"
-                    >
-                      ${amount}
-                    </Button>
-                  ))}
-                </div>
-                <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
-                  <Heart className="h-4 w-4 mr-2" />
-                  Donate Now
-                </Button>
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50">
+      <div className="p-6 space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="p-2 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg">
+                <GraduationCap className="h-6 w-6 text-white" />
               </div>
-            </CardContent>
-          </Card>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">Academic Legacy</h1>
+              {currentUser?.role === 'admin' && <Crown className="h-4 w-4 text-yellow-500" />}
+              {currentUser?.role === 'student' && <UserCheck className="h-4 w-4 text-blue-500" />}
+            </div>
+            <p className="text-gray-600">Support your alma mater and help shape the future of education</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {permissions.canExport && (
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-1" />
+                Export
+              </Button>
+            )}
+            <Button variant="outline" size="sm">
+              <Share2 className="h-4 w-4 mr-1" />
+              Share Impact
+            </Button>
+            {permissions.canDonate && (
+              <Button size="sm" className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600">
+                <Gift className="h-4 w-4 mr-1" />
+                Make a Gift
+              </Button>
+            )}
+            {permissions.canCreateCampaigns && (
+              <Button size="sm" className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700">
+                <Plus className="h-4 w-4 mr-1" />
+                New Campaign
+              </Button>
+            )}
+          </div>
+        </div>
 
-          {/* Search and Filter */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Search className="h-5 w-5" />
-                Find Giving Opportunities
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Search opportunities..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  {['all', 'scholarships', 'facilities', 'programs'].map(category => (
-                    <Button
-                      key={category}
-                      variant={selectedCategory === category ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setSelectedCategory(category)}
-                      className="capitalize"
-                    >
-                      {category}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Scope tabs for Alumni/Admin; Students see institution-only */}
+        {permissions.scopeAccess !== 'institution-only' && (
+          <div className="flex items-center space-x-2 p-4 bg-white/80 backdrop-blur-sm rounded-lg border">
+            <Button
+              variant={activeScope === 'institution' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveScope('institution')}
+              className={activeScope === 'institution' ? 'bg-emerald-500 hover:bg-emerald-600' : ''}
+            >
+              <University className="h-4 w-4 mr-1" />
+              Institution
+            </Button>
+            <Button
+              variant={activeScope === 'global' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveScope('global')}
+              className={activeScope === 'global' ? 'bg-teal-500 hover:bg-teal-600' : ''}
+            >
+              <Globe className="h-4 w-4 mr-1" />
+              Global
+            </Button>
+            <div className="text-sm text-gray-600 ml-2">
+              {activeScope === 'institution' ? (
+                <span>🏛️ Supporting {currentUser?.institution}</span>
+              ) : (
+                <span>🌍 Supporting global alumni initiatives</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Academic Legacy Tabs */}
+        <Tabs defaultValue="giving" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5 bg-white/80 backdrop-blur-sm">
+            <TabsTrigger value="giving" className="flex items-center gap-2 data-[state=active]:bg-emerald-100">
+              <Gift className="h-4 w-4" />
+              Giving
+            </TabsTrigger>
+            <TabsTrigger value="volunteer" className="flex items-center gap-2 data-[state=active]:bg-emerald-100">
+              <Users className="h-4 w-4" />
+              Volunteer
+            </TabsTrigger>
+            <TabsTrigger value="impact" className="flex items-center gap-2 data-[state=active]:bg-emerald-100">
+              <TrendingUp className="h-4 w-4" />
+              Impact
+            </TabsTrigger>
+            <TabsTrigger value="news" className="flex items-center gap-2 data-[state=active]:bg-emerald-100">
+              <BookOpen className="h-4 w-4" />
+              University News
+            </TabsTrigger>
+            <TabsTrigger value="recognition" className="flex items-center gap-2 data-[state=active]:bg-emerald-100">
+              <Award className="h-4 w-4" />
+              Recognition
+            </TabsTrigger>
+          </TabsList>
 
           {/* Giving Opportunities */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredOpportunities.map((opportunity) => (
-              <Card key={opportunity.id} className="hover:shadow-lg transition-shadow">
-                <div className="aspect-video bg-gray-200 rounded-t-lg flex items-center justify-center">
-                  <Building className="h-8 w-8 text-gray-400" />
-                </div>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <Badge 
-                      variant={opportunity.urgency === 'high' ? 'destructive' : 
-                              opportunity.urgency === 'medium' ? 'default' : 'secondary'}
-                      className="text-xs"
-                    >
-                      {opportunity.urgency} priority
-                    </Badge>
-                    <Badge variant="outline" className="text-xs capitalize">
-                      {opportunity.category}
-                    </Badge>
-                  </div>
-                  
-                  <h3 className="font-semibold mb-2">{opportunity.title}</h3>
-                  <p className="text-sm text-gray-600 mb-3">{opportunity.description}</p>
-                  
-                  <div className="mb-3">
-                    <div className="flex justify-between text-sm mb-1">
-                      <span>Progress</span>
-                      <span className="font-medium">
-                        {formatCurrency(opportunity.raised)} / {formatCurrency(opportunity.goal)}
-                      </span>
+          <TabsContent value="giving" className="space-y-6">
+            {/* Quick Donation */}
+            {permissions.canDonate && (
+              <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200 bg-white/80 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-emerald-900">
+                    <Sparkles className="h-5 w-5" />
+                    Make a Quick Gift
+                  </CardTitle>
+                  <CardDescription className="text-emerald-700">
+                    Every contribution makes a difference in a student's life
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col md:flex-row gap-4 items-end">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium mb-2 text-emerald-900">
+                        Donation Amount
+                      </label>
+                      <Input
+                        type="number"
+                        placeholder="Enter amount"
+                        value={donationAmount}
+                        onChange={(e) => setDonationAmount(e.target.value)}
+                        className="bg-white"
+                      />
                     </div>
-                    <Progress 
-                      value={getProgressPercentage(opportunity.raised, opportunity.goal)} 
-                      className="h-2"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      {getProgressPercentage(opportunity.raised, opportunity.goal)}% funded • {opportunity.donors} donors
-                    </p>
-                  </div>
-                  
-                  <div className="text-xs text-blue-600 mb-3 font-medium">
-                    Impact: {opportunity.impact}
-                  </div>
-                  
-                  <div className="flex space-x-2">
-                    <Button size="sm" className="flex-1">
-                      <Gift className="h-4 w-4 mr-1" />
-                      Donate
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      Learn More
+                    <div className="flex gap-2">
+                      {[25, 50, 100, 250].map(amount => (
+                        <Button
+                          key={amount}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setDonationAmount(amount.toString())}
+                          className="bg-white hover:bg-emerald-50"
+                        >
+                          ${amount}
+                        </Button>
+                      ))}
+                    </div>
+                    <Button size="lg" className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600">
+                      <Heart className="h-4 w-4 mr-2" />
+                      Donate Now
                     </Button>
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        </TabsContent>
+            )}
 
-        {/* Volunteer Opportunities */}
-        <TabsContent value="volunteer" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Give Your Time and Expertise</CardTitle>
-              <CardDescription>
-                Volunteer opportunities to support current students and university programs
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-2 gap-6">
-                {volunteerOpportunities.map((opportunity) => (
-                  <Card key={opportunity.id} className="border-l-4 border-l-green-500">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <h3 className="font-semibold">{opportunity.title}</h3>
-                        <Badge variant={opportunity.type === 'ongoing' ? 'default' : 'secondary'}>
-                          {opportunity.type}
+            {/* Search and Filter */}
+            <Card className="bg-white/80 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Search className="h-5 w-5" />
+                  Find Giving Opportunities
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Search opportunities..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    {['all', 'scholarships', 'facilities', 'programs', 'emergency'].map(category => (
+                      <Button
+                        key={category}
+                        variant={selectedCategory === category ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setSelectedCategory(category)}
+                        className={`capitalize ${
+                          selectedCategory === category ? 'bg-emerald-500 hover:bg-emerald-600' : 'hover:bg-emerald-50'
+                        }`}
+                      >
+                        {category}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Giving Opportunities */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredOpportunities.map((opportunity) => (
+                <Card key={opportunity.id} className="hover:shadow-lg transition-shadow bg-white/80 backdrop-blur-sm">
+                  <div className="aspect-video bg-gradient-to-br from-emerald-100 to-teal-100 rounded-t-lg flex items-center justify-center">
+                    <Building className="h-8 w-8 text-emerald-600" />
+                  </div>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Badge 
+                          variant={opportunity.urgency === 'high' ? 'destructive' : 
+                                  opportunity.urgency === 'medium' ? 'default' : 'secondary'}
+                          className="text-xs"
+                        >
+                          {opportunity.urgency} priority
+                        </Badge>
+                        <Badge className={`text-xs ${opportunity.is_global ? 'bg-teal-100 text-teal-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                          {opportunity.is_global ? 'Global' : 'Institution'}
                         </Badge>
                       </div>
-                      
-                      <p className="text-sm text-gray-600 mb-3">{opportunity.description}</p>
-                      
-                      <div className="space-y-2 text-sm mb-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-gray-600">Time Commitment:</span>
-                          <span className="font-medium">{opportunity.timeCommitment}</span>
+                      {permissions.canEditCampaigns && (
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="ghost" className="h-6 px-1">
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                          {permissions.canDeleteCampaigns && (
+                            <Button size="sm" variant="ghost" className="h-6 px-1 text-red-500">
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          )}
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-gray-600">Department:</span>
-                          <span className="font-medium">{opportunity.department}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-gray-600">Current Volunteers:</span>
-                          <span className="font-medium">{opportunity.volunteers}</span>
-                        </div>
+                      )}
+                    </div>
+                    
+                    <Badge variant="outline" className="text-xs capitalize mb-2">
+                      {opportunity.category}
+                    </Badge>
+                    
+                    <h3 className="font-semibold mb-2">{opportunity.title}</h3>
+                    <p className="text-sm text-gray-600 mb-3">{opportunity.description}</p>
+                    
+                    <div className="mb-3">
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>Progress</span>
+                        <span className="font-medium">
+                          {formatCurrency(opportunity.raised)} / {formatCurrency(opportunity.goal)}
+                        </span>
                       </div>
-                      
-                      <div className="mb-3">
-                        <p className="text-xs text-gray-600 mb-1">Required Skills:</p>
-                        <div className="flex flex-wrap gap-1">
-                          {opportunity.skills.map((skill, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
-                              {skill}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      <div className="flex space-x-2">
-                        <Button size="sm" className="flex-1">
-                          <Users className="h-4 w-4 mr-1" />
-                          Volunteer
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          Learn More
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                      <Progress 
+                        value={getProgressPercentage(opportunity.raised, opportunity.goal)} 
+                        className="h-2"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        {getProgressPercentage(opportunity.raised, opportunity.goal)}% funded • {opportunity.donors} donors
+                      </p>
+                    </div>
+                    
+                    <div className="text-xs text-emerald-600 mb-3 font-medium">
+                      🎆 Impact: {opportunity.impact}
+                    </div>
+                    
+                    <div className="flex space-x-2">
+                      <Button 
+                        size="sm" 
+                        className="flex-1 bg-emerald-500 hover:bg-emerald-600"
+                        disabled={!permissions.canDonate}
+                      >
+                        <Gift className="h-4 w-4 mr-1" />
+                        Donate
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        Learn More
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
         </TabsContent>
+
+          {/* Volunteer Opportunities */}
+          <TabsContent value="volunteer" className="space-y-6">
+            <Card className="bg-white/80 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Give Your Time and Expertise
+                </CardTitle>
+                <CardDescription>
+                  Volunteer opportunities to support current students and university programs {activeScope === 'global' ? 'worldwide' : `at ${currentUser?.institution}`}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-2 gap-6">
+                  {volunteerOpportunities.map((opportunity) => (
+                    <Card key={opportunity.id} className="border-l-4 border-l-emerald-500 hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold">{opportunity.title}</h3>
+                            <Badge className={`text-xs ${opportunity.is_global ? 'bg-teal-100 text-teal-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                              {opportunity.is_global ? 'Global' : 'Institution'}
+                            </Badge>
+                          </div>
+                          <Badge variant={opportunity.type === 'ongoing' ? 'default' : 
+                                         opportunity.type === 'online' ? 'secondary' : 'outline'}>
+                            {opportunity.type}
+                          </Badge>
+                        </div>
+                        
+                        <p className="text-sm text-gray-600 mb-3">{opportunity.description}</p>
+                        
+                        <div className="space-y-2 text-sm mb-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600 flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              Time Commitment:
+                            </span>
+                            <span className="font-medium">{opportunity.timeCommitment}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600 flex items-center gap-1">
+                              <Building className="h-3 w-3" />
+                              Department:
+                            </span>
+                            <span className="font-medium">{opportunity.department}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600 flex items-center gap-1">
+                              <Users className="h-3 w-3" />
+                              Current Volunteers:
+                            </span>
+                            <span className="font-medium text-emerald-600">{opportunity.volunteers}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="mb-3">
+                          <p className="text-xs text-gray-600 mb-1 flex items-center gap-1">
+                            <Star className="h-3 w-3" />
+                            Required Skills:
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {opportunity.skills.map((skill, index) => (
+                              <Badge key={index} variant="outline" className="text-xs">
+                                {skill}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <div className="flex space-x-2">
+                          <Button 
+                            size="sm" 
+                            className="flex-1 bg-emerald-500 hover:bg-emerald-600"
+                            disabled={!permissions.canVolunteer}
+                          >
+                            <Users className="h-4 w-4 mr-1" />
+                            Volunteer
+                          </Button>
+                          <Button variant="outline" size="sm">
+                            Learn More
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
         {/* Impact Stories */}
         <TabsContent value="impact" className="space-y-6">
@@ -664,10 +891,11 @@ const AcademicLegacy = () => {
             </Card>
           </div>
         </TabsContent>
-      </Tabs>
+        </Tabs>
+      </div>
     </div>
   )
 }
 
-export default AcademicLegacy
+export default ModernAcademicLegacy
 

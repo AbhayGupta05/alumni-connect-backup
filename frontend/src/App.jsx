@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { useAuth } from './contexts/AuthContext'
 import Navbar from './components/Navbar'
 import Sidebar from './components/Sidebar'
 import Dashboard from './components/Dashboard'
@@ -15,21 +16,21 @@ import AdminDashboard from './components/AdminDashboard'
 import LoginPage from './components/LoginPage'
 import RegisterPage from './components/RegisterPage'
 import LandingPage from './components/LandingPage'
+import LoadingSpinner from './components/LoadingSpinner'
+import CreateAccountPage from './components/CreateAccountPage'
 import './App.css'
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [userType, setUserType] = useState('alumni') // 'alumni' or 'admin'
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-
-  const handleLogin = (type) => {
-    setIsAuthenticated(true)
-    setUserType(type)
-  }
+  const { isAuthenticated, userType, isLoading, logout } = useAuth()
+  const [sidebarOpen, setSidebarOpen] = React.useState(false)
 
   const handleLogout = () => {
-    setIsAuthenticated(false)
-    setUserType('alumni')
+    logout()
+  }
+
+  // Show loading spinner while checking authentication
+  if (isLoading) {
+    return <LoadingSpinner />
   }
 
   return (
@@ -37,9 +38,10 @@ function App() {
       {!isAuthenticated ? (
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
+          <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          {/* Allow access to feature pages from landing page */}
+          <Route path="/create-account" element={<CreateAccountPage />} />
+          {/* Public preview pages */}
           <Route path="/directory" element={<AlumniDirectory />} />
           <Route path="/events" element={<Events />} />
           <Route path="/communication" element={<CommunicationHub />} />
@@ -66,7 +68,7 @@ function App() {
             <main className="flex-1 lg:ml-64 pt-16">
               <Routes>
                 <Route path="/" element={
-                  userType === 'admin' ? <AdminDashboard /> : <Dashboard />
+                  userType === 'super_admin' || userType === 'institution_admin' ? <AdminDashboard /> : <Dashboard />
                 } />
                 <Route path="/directory" element={<AlumniDirectory />} />
                 <Route path="/profile/:id" element={<ProfilePage />} />

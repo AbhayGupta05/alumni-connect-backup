@@ -79,10 +79,14 @@ try:
     if database_configured:
         with app.app_context():
             try:
+                print("Attempting to initialize database tables...")
                 db.create_all()
+                print("Database tables created successfully!")
                 db_initialized = True
             except Exception as e:
                 print(f"Database initialization error: {e}")
+                import traceback
+                traceback.print_exc()
     
     main_app_loaded = True
     
@@ -126,6 +130,67 @@ def test():
         'success': True,
         'full_app_loaded': main_app_loaded
     }
+
+@app.route('/debug-db')
+def debug_database():
+    debug_info = {
+        'database_configured': database_configured,
+        'database_initialized': db_initialized,
+        'postgres_url_exists': bool(os.environ.get('POSTGRES_URL')),
+        'environment_vars': {
+            'FLASK_ENV': os.environ.get('FLASK_ENV'),
+            'SECRET_KEY_SET': bool(os.environ.get('SECRET_KEY'))
+        }
+    }
+    
+    # Try to test database connection
+    if database_configured and main_app_loaded:
+        try:
+            from src.models.user import db
+            with app.app_context():
+                # Try a simple query
+                result = db.engine.execute('SELECT 1').fetchone()
+                debug_info['database_connection_test'] = 'SUCCESS'
+        except Exception as e:
+            debug_info['database_connection_test'] = f'FAILED: {str(e)}'
+    else:
+        debug_info['database_connection_test'] = 'NOT_ATTEMPTED'
+    
+    return debug_info
+
+@app.route('/init-db')
+def force_init_database():
+    global db_initialized
+    
+    if not database_configured:
+        return {'error': 'Database not configured'}, 500
+    
+    if not main_app_loaded:
+        return {'error': 'Main app not loaded'}, 500
+    
+    try:
+        from src.models.user import db
+        with app.app_context():
+            print("Force initializing database...")
+            db.create_all()
+            db_initialized = True
+            print("Database force initialization completed!")
+            
+            return {
+                'success': True,
+                'message': 'Database initialized successfully',
+                'database_initialized': db_initialized
+            }
+    except Exception as e:
+        error_msg = str(e)
+        print(f"Force database initialization failed: {error_msg}")
+        import traceback
+        traceback.print_exc()
+        return {
+            'success': False,
+            'error': error_msg,
+            'database_initialized': db_initialized
+        }, 500
 
 # Add CORS support
 @app.after_request

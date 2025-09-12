@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import os
 import sys
 
@@ -181,6 +181,56 @@ def debug_database():
     
     return debug_info
 
+@app.route('/create-admin')
+def create_super_admin():
+    """Create super admin user for testing"""
+    if not database_configured or not db_initialized:
+        return {'error': 'Database not ready'}, 500
+    
+    try:
+        from src.models.user import db, User, UserRole, UserStatus
+        
+        with app.app_context():
+            # Check if super admin already exists
+            existing_admin = User.query.filter_by(role=UserRole.SUPER_ADMIN).first()
+            if existing_admin:
+                return {
+                    'success': False,
+                    'message': f'Super admin already exists: {existing_admin.email}'
+                }
+            
+            # Create super admin
+            admin = User(
+                username='super_admin',
+                email='anydesk778@gmail.com',
+                role=UserRole.SUPER_ADMIN,
+                status=UserStatus.ACTIVE,
+                first_name='Super',
+                last_name='Admin',
+                is_email_verified=True
+            )
+            admin.set_password('Generic.Pass@0012')
+            admin.activate_account()
+            
+            db.session.add(admin)
+            db.session.commit()
+            
+            return {
+                'success': True,
+                'message': 'Super admin created successfully',
+                'admin_email': 'anydesk778@gmail.com'
+            }
+            
+    except Exception as e:
+        error_msg = str(e)
+        print(f"Failed to create super admin: {error_msg}")
+        import traceback
+        traceback.print_exc()
+        return {
+            'success': False,
+            'error': error_msg
+        }, 500
+
 @app.route('/init-db')
 def force_init_database():
     global db_initialized
@@ -229,6 +279,42 @@ def force_init_database():
             'error': error_msg,
             'database_initialized': db_initialized
         }, 500
+
+@app.route('/test-login', methods=['POST'])
+def test_login():
+    """Simple test login endpoint"""
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        password = data.get('password')
+        
+        if not email or not password:
+            return {'success': False, 'error': 'Email and password required'}, 400
+        
+        from src.models.user import db, User
+        
+        with app.app_context():
+            user = User.query.filter_by(email=email).first()
+            
+            if not user:
+                return {'success': False, 'error': 'User not found'}, 404
+            
+            if not user.check_password(password):
+                return {'success': False, 'error': 'Invalid password'}, 401
+            
+            return {
+                'success': True,
+                'user': {
+                    'id': user.id,
+                    'email': user.email,
+                    'username': user.username,
+                    'role': user.role.value,
+                    'status': user.status.value
+                }
+            }
+            
+    except Exception as e:
+        return {'success': False, 'error': str(e)}, 500
 
 @app.route('/alumni-claim/colleges')
 def get_colleges_simple():

@@ -12,7 +12,7 @@ class Event(db.Model):
     virtual_link = db.Column(db.String(300))
     max_attendees = db.Column(db.Integer)
     registration_deadline = db.Column(db.DateTime)
-    organizer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    organizer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     event_type = db.Column(db.String(50))  # reunion, networking, workshop, etc.
     status = db.Column(db.String(20), default='active')  # active, cancelled, completed
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -42,7 +42,7 @@ class Event(db.Model):
 class EventRegistration(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     event_id = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     registration_date = db.Column(db.DateTime, default=datetime.utcnow)
     status = db.Column(db.String(20), default='registered')  # registered, attended, cancelled
 

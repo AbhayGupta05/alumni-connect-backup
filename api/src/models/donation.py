@@ -39,7 +39,7 @@ class DonationCampaign(db.Model):
 
 class Donation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    donor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    donor_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     campaign_id = db.Column(db.Integer, db.ForeignKey('donation_campaign.id'))
     amount = db.Column(db.Float, nullable=False)
     message = db.Column(db.Text)

@@ -12,7 +12,7 @@ class Job(db.Model):
     salary_max = db.Column(db.Integer)
     description = db.Column(db.Text)
     requirements = db.Column(db.Text)
-    posted_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    posted_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     application_deadline = db.Column(db.DateTime)
     is_remote = db.Column(db.Boolean, default=False)
     status = db.Column(db.String(20), default='active')  # active, closed, filled
@@ -44,7 +44,7 @@ class Job(db.Model):
 class JobApplication(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     job_id = db.Column(db.Integer, db.ForeignKey('job.id'), nullable=False)
-    applicant_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    applicant_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     cover_letter = db.Column(db.Text)
     resume_url = db.Column(db.String(300))
     status = db.Column(db.String(20), default='applied')  # applied, reviewed, interviewed, rejected, hired

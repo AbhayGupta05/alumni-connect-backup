@@ -347,13 +347,51 @@ def get_colleges_simple():
         'colleges': colleges
     }
 
-# Add CORS support
+# Add CORS support with credentials
 @app.after_request
 def after_request(response):
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    # Get the origin of the request
+    origin = request.headers.get('Origin')
+    
+    # List of allowed origins
+    allowed_origins = [
+        'https://alumna-connect-platform-xldu.vercel.app',
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        'https://localhost:5173'
+    ]
+    
+    # Check if the request origin is in our allowed list
+    if origin in allowed_origins:
+        response.headers.add('Access-Control-Allow-Origin', origin)
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+    
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH')
+    response.headers.add('Access-Control-Max-Age', '86400')  # Cache preflight for 24 hours
+    
     return response
+
+# Handle OPTIONS requests for CORS preflight
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        origin = request.headers.get('Origin')
+        allowed_origins = [
+            'https://alumna-connect-platform-xldu.vercel.app',
+            'http://localhost:5173',
+            'http://127.0.0.1:5173',
+            'https://localhost:5173'
+        ]
+        
+        if origin in allowed_origins:
+            response = jsonify({})
+            response.headers.add('Access-Control-Allow-Origin', origin)
+            response.headers.add('Access-Control-Allow-Credentials', 'true')
+            response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With')
+            response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH')
+            response.headers.add('Access-Control-Max-Age', '86400')
+            return response
 
 # This is required for Vercel
 if __name__ == '__main__':

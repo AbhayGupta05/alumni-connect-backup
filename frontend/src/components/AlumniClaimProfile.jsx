@@ -46,7 +46,8 @@ const AlumniClaimProfile = () => {
 
   const fetchColleges = async () => {
     try {
-      const response = await fetch('http://localhost:5000/alumni-claim/colleges')
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
+      const response = await fetch(`${API_BASE_URL}/alumni-claim/colleges`)
       const data = await response.json()
       
       if (data.success) {
@@ -253,7 +254,8 @@ const AlumniClaimProfile = () => {
         }
       })
       
-      const response = await fetch('http://localhost:5000/alumni-claim/submit-claim', {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
+      const response = await fetch(`${API_BASE_URL}/alumni-claim/submit-claim`, {
         method: 'POST',
         body: submitFormData
       })

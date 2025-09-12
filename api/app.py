@@ -47,6 +47,17 @@ main_app_loaded = False
 try:
     # Import database first
     from src.models.user import db, User, UserRole, UserStatus
+    
+    # Import all models to ensure they are registered with SQLAlchemy
+    from src.models.institution import Institution, DataUploadBatch
+    from src.models.invite_token import InviteToken, EmailVerification
+    from src.models.alumni import Alumni, AlumniExperience
+    from src.models.student import Student, StudentAchievement
+    from src.models.event import Event, EventRegistration
+    from src.models.message import Message, ForumPost
+    from src.models.job import Job, JobApplication
+    from src.models.donation import Donation, DonationCampaign
+    
     db.init_app(app)
     
     # Import blueprints
@@ -148,8 +159,9 @@ def debug_database():
         try:
             from src.models.user import db
             with app.app_context():
-                # Try a simple query
-                result = db.engine.execute('SELECT 1').fetchone()
+                # Try a simple query (SQLAlchemy 2.0 syntax)
+                from sqlalchemy import text
+                result = db.session.execute(text('SELECT 1')).fetchone()
                 debug_info['database_connection_test'] = 'SUCCESS'
         except Exception as e:
             debug_info['database_connection_test'] = f'FAILED: {str(e)}'
@@ -170,8 +182,18 @@ def force_init_database():
     
     try:
         from src.models.user import db
+        # Import all models to ensure proper table creation order
+        from src.models.institution import Institution, DataUploadBatch
+        from src.models.invite_token import InviteToken, EmailVerification
+        from src.models.alumni import Alumni, AlumniExperience
+        from src.models.student import Student, StudentAchievement
+        from src.models.event import Event, EventRegistration
+        from src.models.message import Message, ForumPost
+        from src.models.job import Job, JobApplication
+        from src.models.donation import Donation, DonationCampaign
+        
         with app.app_context():
-            print("Force initializing database...")
+            print("Force initializing database with all models...")
             db.create_all()
             db_initialized = True
             print("Database force initialization completed!")
@@ -191,6 +213,37 @@ def force_init_database():
             'error': error_msg,
             'database_initialized': db_initialized
         }, 500
+
+@app.route('/alumni-claim/colleges')
+def get_colleges_simple():
+    """Simple colleges endpoint that doesn't require database"""
+    colleges = [
+        "Indian Institute of Technology Bombay (IIT Bombay)",
+        "Indian Institute of Technology Delhi (IIT Delhi)", 
+        "Indian Institute of Technology Madras (IIT Madras)",
+        "Indian Institute of Technology Kanpur (IIT Kanpur)",
+        "Indian Institute of Technology Kharagpur (IIT Kharagpur)",
+        "Indian Institute of Science (IISc) Bangalore",
+        "All India Institute of Medical Sciences (AIIMS), New Delhi",
+        "Jawaharlal Nehru University (JNU), New Delhi",
+        "University of Delhi (DU)",
+        "Banaras Hindu University (BHU), Varanasi",
+        "Vellore Institute of Technology (VIT), Vellore",
+        "Amrita Vishwa Vidyapeetham, Coimbatore",
+        "National Institute of Technology Tiruchirappalli (NIT Trichy)",
+        "Anna University, Chennai",
+        "Indian Institute of Management Ahmedabad (IIM Ahmedabad)",
+        "Jadavpur University, Kolkata",
+        "BITS Pilani - Pilani Campus",
+        "Delhi Technological University (DTU)",
+        "Pune Institute of Computer Technology",
+        "Manipal Academy of Higher Education, Manipal"
+    ]
+    
+    return {
+        'success': True,
+        'colleges': colleges
+    }
 
 # Add CORS support
 @app.after_request

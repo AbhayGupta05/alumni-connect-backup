@@ -7,6 +7,8 @@ import LandingPage from './components/LandingPage'
 import CreateAccountPage from './components/CreateAccountPage'
 import AlumniClaimProfile from './components/AlumniClaimProfile'
 import './App.css'
+import AdminDashboard from './components/AdminDashboard'
+import Dashboard from './components/Dashboard'
 
 function App() {
   const { isAuthenticated, userType, isLoading, logout, user } = useAuth()
@@ -33,24 +35,7 @@ function App() {
           ) : (
             <>
               <Route path="/" element={
-                <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                  <div className="max-w-md w-full mx-auto p-6 bg-white rounded-lg shadow text-center">
-                    <h3 className="text-lg font-semibold mb-2">✅ Welcome Back!</h3>
-                    <p className="mb-4">You are successfully logged in as: <strong>{userType}</strong></p>
-                    {user && (
-                      <div className="mb-4">
-                        <p>Email: {user.email}</p>
-                        <p>Name: {user.first_name} {user.last_name}</p>
-                      </div>
-                    )}
-                    <button 
-                      onClick={logout}
-                      className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
-                    >
-                      Logout
-                    </button>
-                  </div>
-                </div>
+                (['super_admin','institution_admin','admin'].includes(userType) ? <AdminDashboard /> : <Dashboard />)
               } />
               <Route path="*" element={<Navigate to="/" />} />
             </>
